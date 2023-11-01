@@ -2,6 +2,8 @@
 
 Support GPTQ 4bit inference with [GPTQ-for-LLaMa](https://github.com/qwopqwop200/GPTQ-for-LLaMa).
 
+If you want to use AutoGPTQ, please refer to [AutoGPTQ](https://github.com/lm-sys/FastChat/blob/main/docs/auto_gptq.md)
+
 1. Window user: use the `old-cuda` branch.
 2. Linux user: recommend the `fastest-inference-4bit` branch.
 
