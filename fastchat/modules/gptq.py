@@ -24,9 +24,17 @@ class GptqConfig:
         default=True,
         metadata={"help": "Whether to apply the activation order GPTQ heuristic"},
     )
+    auto_gptq: bool = field(
+        # turn on auto_gptq by default
+        default=True,
+        metadata={"help": "Whether to enable auto_gptq"},
+    )
 
 
 def load_gptq_quantized(model_name, gptq_config: GptqConfig):
+    if gptq_config.auto_gptq:
+        return load_auto_gptq_quantized(model_name, gptq_config)
+
     print("Loading GPTQ quantized model...")
 
     try:
@@ -58,6 +66,36 @@ def load_gptq_quantized(model_name, gptq_config: GptqConfig):
             gptq_config.wbits,
             gptq_config.groupsize,
         )
+
+    return model, tokenizer
+
+
+def load_auto_gptq_quantized(model_name, gptq_config: GptqConfig):
+    print("Loading AutoGPTQ quantized model...")
+
+    try:
+        from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
+    except ImportError as e:
+        print(f"Error: Failed to load AutoGPTQ. {e}")
+        print("See https://github.com/lm-sys/FastChat/blob/main/docs/auto_gptq.md")
+        sys.exit(-1)
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False, trust_remote_code=True)
+    # set quantization config
+    if gptq_config.act_order:
+        quant_config = BaseQuantizeConfig(
+            bits=gptq_config.wbits,
+            group_size=gptq_config.groupsize,
+            act_order=gptq_config.act_order,
+        )
+    else:
+        quant_config = BaseQuantizeConfig(
+            bits=gptq_config.wbits,
+            group_size=gptq_config.groupsize,
+        )
+
+    # use auto-gptq
+    model = AutoGPTQForCausalLM.from_quantized(model_name, quant_config, trust_remote_code=True)
 
     return model, tokenizer
 
