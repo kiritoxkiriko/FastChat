@@ -20,7 +20,7 @@ Chat with the CLI:
 ```bash
 python3 -m fastchat.serve.cli \
     --model-path facebook/opt-125m \
-    --auto-gptq True \
+    --gptq-auto-gptq True \
     --gptq-wbits 4 \
     --gptq-groupsize 128
 ```
@@ -29,7 +29,7 @@ Start model worker:
 ```bash
 python3 -m fastchat.serve.model_worker \
     --model-path models/vicuna-7B-1.1-GPTQ-4bit-128g \
-    --auto-gptq True \
+    --gptq-auto-gptq True \
     --gptq-wbits 4 \
     --gptq-groupsize 128
 
@@ -37,7 +37,7 @@ python3 -m fastchat.serve.model_worker \
 python3 -m fastchat.serve.model_worker \
     --model-path models/vicuna-7B-1.1-GPTQ-4bit-128g \
     --gptq-ckpt models/vicuna-7B-1.1-GPTQ-4bit-128g/vicuna-7B-1.1-GPTQ-4bit-128g.safetensors \
-    --auto-gptq True \
+    --gptq-auto-gptq True \
     --gptq-wbits 4 \
     --gptq-groupsize 128 \
     --gptq-act-order

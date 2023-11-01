@@ -231,6 +231,7 @@ def main(args):
                 wbits=args.gptq_wbits,
                 groupsize=args.gptq_groupsize,
                 act_order=args.gptq_act_order,
+                auto_gptq=args.gptq_auto_gptq,
             ),
             awq_config=AWQConfig(
                 ckpt=args.awq_ckpt or args.model_path,

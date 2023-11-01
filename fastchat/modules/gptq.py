@@ -25,7 +25,7 @@ class GptqConfig:
         metadata={"help": "Whether to apply the activation order GPTQ heuristic"},
     )
     auto_gptq: bool = field(
-        # turn on auto_gptq by default
+        # turn off auto_gptq by default
         default=True,
         metadata={"help": "Whether to enable auto_gptq"},
     )
@@ -48,7 +48,7 @@ def load_gptq_quantized(model_name, gptq_config: GptqConfig):
         print("See https://github.com/lm-sys/FastChat/blob/main/docs/gptq.md")
         sys.exit(-1)
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+    tokenizer = AutoTokenizer.from_pretrained(go, use_fast=False)
     # only `fastest-inference-4bit` branch cares about `act_order`
     if gptq_config.act_order:
         model = load_quant(
@@ -95,7 +95,7 @@ def load_auto_gptq_quantized(model_name, gptq_config: GptqConfig):
         )
 
     # use auto-gptq
-    model = AutoGPTQForCausalLM.from_quantized(model_name, quant_config, trust_remote_code=True)
+    model = AutoGPTQForCausalLM.from_quantized(gptq_config.ckpt, quant_config, trust_remote_code=True)
 
     return model, tokenizer
 
