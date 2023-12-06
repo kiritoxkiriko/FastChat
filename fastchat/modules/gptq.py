@@ -32,8 +32,6 @@ class GptqConfig:
 
 
 def load_gptq_quantized(model_name, gptq_config: GptqConfig):
-    if gptq_config.auto_gptq:
-        return load_auto_gptq_quantized(model_name, gptq_config)
 
     print("Loading GPTQ quantized model...")
 

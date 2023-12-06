@@ -30,6 +30,10 @@ from fastchat.utils import (
     str_to_torch_dtype,
 )
 
+from transformers import (
+    GPTQConfig,
+)
+
 
 worker_id = str(uuid.uuid4())[:8]
 logger = build_logger("model_worker", f"model_worker_{worker_id}.log")
@@ -336,7 +340,6 @@ def create_model_worker():
         seed=args.seed,
     )
     return args, worker
-
 
 if __name__ == "__main__":
     args, worker = create_model_worker()
