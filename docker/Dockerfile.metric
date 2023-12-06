@@ -1,0 +1,16 @@
+ARG VERSION=0.2.33
+FROM kiritoxkiriko/fastchat:$VERSION
+
+ENV FASTCHAT_BASE_PATH=/opt/conda/lib/python3.10/site-packages/fastchat
+
+RUN pip install --no-cache-dir prometheus_fastapi_instrumentator
+
+COPY ./fastchat/serve/openai_api_server.py $FASTCHAT_BASE_PATH/serve/openai_api_server.py
+COPY ./fastchat/serve/model_worker.py $FASTCHAT_BASE_PATH/serve/model_worker.py
+COPY ./fastchat/serve/vllm_worker.py $FASTCHAT_BASE_PATH/serve/vllm_worker.py
+COPY ./docker/entrypoint.sh ./entrypoint.sh
+
+ENTRYPOINT ["bash", "./entrypoint.sh"]
+
+
+
