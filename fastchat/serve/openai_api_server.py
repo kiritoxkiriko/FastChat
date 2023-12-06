@@ -104,9 +104,25 @@ app = fastapi.FastAPI()
 headers = {"User-Agent": "FastChat API Server"}
 get_bearer_token = HTTPBearer(auto_error=False)
 
+## add metrics
+from prometheus_fastapi_instrumentator import Instrumentator
+
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    excluded_handlers=[".*admin.*", "/metrics"],
+).instrument(app)
+
+
+@app.on_event("startup")
+async def _startup():
+    # set ENABLE_METRICS to True to enable metrics
+    instrumentator.expose(app)
+
 
 async def check_api_key(
-    auth: Optional[HTTPAuthorizationCredentials] = Depends(get_bearer_token),
+        auth: Optional[HTTPAuthorizationCredentials] = Depends(get_bearer_token),
 ) -> str:
     if app_settings.api_keys:
         if auth is None or (token := auth.credentials) not in app_settings.api_keys:
@@ -153,7 +169,7 @@ async def check_model(request) -> Optional[JSONResponse]:
 
 async def check_length(request, prompt, max_tokens, worker_addr):
     if (
-        not isinstance(max_tokens, int) or max_tokens <= 0
+            not isinstance(max_tokens, int) or max_tokens <= 0
     ):  # model worker not support max_tokens=None
         max_tokens = 1024 * 1024
 
@@ -214,7 +230,7 @@ def check_requests(request) -> Optional[JSONResponse]:
             f"{request.top_k} is out of Range. Either set top_k to -1 or >=1.",
         )
     if request.stop is not None and (
-        not isinstance(request.stop, str) and not isinstance(request.stop, list)
+            not isinstance(request.stop, str) and not isinstance(request.stop, list)
     ):
         return create_error_response(
             ErrorCode.PARAM_OUT_OF_RANGE,
@@ -253,21 +269,21 @@ def _add_to_set(s, new_stop):
 
 
 async def get_gen_params(
-    model_name: str,
-    worker_addr: str,
-    messages: Union[str, List[Dict[str, str]]],
-    *,
-    temperature: float,
-    top_p: float,
-    top_k: Optional[int],
-    presence_penalty: Optional[float],
-    frequency_penalty: Optional[float],
-    max_tokens: Optional[int],
-    echo: Optional[bool],
-    logprobs: Optional[int] = None,
-    stop: Optional[Union[str, List[str]]],
-    best_of: Optional[int] = None,
-    use_beam_search: Optional[bool] = None,
+        model_name: str,
+        worker_addr: str,
+        messages: Union[str, List[Dict[str, str]]],
+        *,
+        temperature: float,
+        top_p: float,
+        top_k: Optional[int],
+        presence_penalty: Optional[float],
+        frequency_penalty: Optional[float],
+        max_tokens: Optional[int],
+        echo: Optional[bool],
+        logprobs: Optional[int] = None,
+        stop: Optional[Union[str, List[str]]],
+        best_of: Optional[int] = None,
+        use_beam_search: Optional[bool] = None,
 ) -> Dict[str, Any]:
     conv = await get_conv(model_name, worker_addr)
     conv = Conversation(
@@ -448,7 +464,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
 
 
 async def chat_completion_stream_generator(
-    model_name: str, gen_params: Dict[str, Any], n: int, worker_addr: str
+        model_name: str, gen_params: Dict[str, Any], n: int, worker_addr: str
 ) -> Generator[str, Any, None]:
     """
     Event stream format:
@@ -475,7 +491,7 @@ async def chat_completion_stream_generator(
                 yield "data: [DONE]\n\n"
                 return
             decoded_unicode = content["text"].replace("\ufffd", "")
-            delta_text = decoded_unicode[len(previous_text) :]
+            delta_text = decoded_unicode[len(previous_text):]
             previous_text = (
                 decoded_unicode
                 if len(decoded_unicode) > len(previous_text)
@@ -583,7 +599,7 @@ async def create_completion(request: CompletionRequest):
 
 
 async def generate_completion_stream_generator(
-    request: CompletionRequest, n: int, worker_addr: str
+        request: CompletionRequest, n: int, worker_addr: str
 ):
     model_name = request.model
     id = f"cmpl-{shortuuid.random()}"
@@ -611,7 +627,7 @@ async def generate_completion_stream_generator(
                     yield "data: [DONE]\n\n"
                     return
                 decoded_unicode = content["text"].replace("\ufffd", "")
-                delta_text = decoded_unicode[len(previous_text) :]
+                delta_text = decoded_unicode[len(previous_text):]
                 previous_text = (
                     decoded_unicode
                     if len(decoded_unicode) > len(previous_text)
@@ -646,18 +662,18 @@ async def generate_completion_stream(payload: Dict[str, Any], worker_addr: str):
     async with httpx.AsyncClient() as client:
         delimiter = b"\0"
         async with client.stream(
-            "POST",
-            worker_addr + "/worker_generate_stream",
-            headers=headers,
-            json=payload,
-            timeout=WORKER_API_TIMEOUT,
+                "POST",
+                worker_addr + "/worker_generate_stream",
+                headers=headers,
+                json=payload,
+                timeout=WORKER_API_TIMEOUT,
         ) as response:
             # content = await response.aread()
             buffer = b""
             async for raw_chunk in response.aiter_raw():
                 buffer += raw_chunk
                 while (chunk_end := buffer.find(delimiter)) >= 0:
-                    chunk, buffer = buffer[:chunk_end], buffer[chunk_end + 1 :]
+                    chunk, buffer = buffer[:chunk_end], buffer[chunk_end + 1:]
                     if not chunk:
                         continue
                     yield json.loads(chunk.decode())
@@ -683,7 +699,7 @@ async def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
     token_num = 0
     batch_size = WORKER_API_EMBEDDING_BATCH_SIZE
     batches = [
-        request.input[i : min(i + batch_size, len(request.input))]
+        request.input[i: min(i + batch_size, len(request.input))]
         for i in range(0, len(request.input), batch_size)
     ]
     for num_batch, batch in enumerate(batches):
