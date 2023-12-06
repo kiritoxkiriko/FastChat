@@ -16,6 +16,7 @@ from typing import Generator, Optional, Union, Dict, List, Any
 
 import aiohttp
 import fastapi
+from fastapi import Request
 from fastapi import Depends, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +27,7 @@ from pydantic import BaseSettings
 import shortuuid
 import tiktoken
 import uvicorn
+import time
 
 from fastchat.constants import (
     WORKER_API_TIMEOUT,
@@ -63,6 +65,16 @@ from fastchat.protocol.api_protocol import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# body logger
+def body_logger(request, raw_request: Request, start_time: float):
+    request_body = request.model_dump_json()
+    process_time = time.time() - start_time
+    request_id = raw_request.headers.get('X-Request-ID') if raw_request.headers.get('X-Request-ID') else ''
+    logger.info(
+        f'receive request: id: {request_id}, body: {request_body}, time: {process_time}')
+
 
 conv_template_map = {}
 
@@ -299,7 +311,6 @@ async def get_gen_params(
         stop_str=conv["stop_str"],
         stop_token_ids=conv["stop_token_ids"],
     )
-
     if isinstance(messages, str):
         prompt = messages
     else:
@@ -392,7 +403,7 @@ async def show_available_models():
 
 
 @app.post("/v1/chat/completions", dependencies=[Depends(check_api_key)])
-async def create_chat_completion(request: ChatCompletionRequest):
+async def create_chat_completion(request: ChatCompletionRequest, raw_request: Request):
     """Creates a completion for the chat message"""
     error_check_ret = await check_model(request)
     if error_check_ret is not None:
@@ -400,6 +411,8 @@ async def create_chat_completion(request: ChatCompletionRequest):
     error_check_ret = check_requests(request)
     if error_check_ret is not None:
         return error_check_ret
+
+    start_time = time.time()
 
     worker_addr = await get_worker_address(request.model)
 
@@ -460,6 +473,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
             for usage_key, usage_value in task_usage.dict().items():
                 setattr(usage, usage_key, getattr(usage, usage_key) + usage_value)
 
+    body_logger(request, raw_request, start_time)
     return ChatCompletionResponse(model=request.model, choices=choices, usage=usage)
 
 
